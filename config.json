@@ -1,0 +1,75 @@
+{
+  "servers": {
+    "1020374565190389760": {
+      "verification_role_id": 1020374565190389767,
+      "ticket_category_id": 1020374567933456512,
+      "staff_role_ids": [
+        1020374565207150626
+      ],
+      "verification_emoji": "\u2705",
+      "staff_mention_role_id": 1020374565207150626,
+      "transcript_channel_id": 1175492699156127866,
+      "welcome_channel_id": 1020374565710467163,
+      "admin_id": 462635310724022285,
+      "admin_email": "unlobo77777@gmail.com"
+    },
+    "1238127937207930880": {
+      "verification_role_id": 1238127937207930886,
+      "ticket_category_id": 1238127938751168546,
+      "staff_role_ids": [
+        1238127937233096854
+      ],
+      "verification_emoji": "\u2705",
+      "staff_mention_role_id": 1238127937233096854,
+      "transcript_channel_id": 1238127938751168552,
+      "welcome_channel_id": 1238127937471905843,
+      "admin_id": 462635310724022285,
+      "admin_email": "unlobo77777@gmail.com"
+    },
+    "1273707991144599624": {
+      "verification_role_id": 1387359740870393887,
+      "ticket_category_id": 1238127938751168546,
+      "staff_role_ids": [
+        1274014746017927229
+      ],
+      "verification_emoji": "\u2705",
+      "staff_mention_role_id": 1274014746017927229,
+      "transcript_channel_id": 1387359943941951508,
+      "welcome_channel_id": 1387360217737596980,
+      "admin_id": 462635310724022285,
+      "admin_email": "unlobo77777@gmail.com"
+    },
+    "1378080877187301417": {
+      "verification_role_id": 1387349313255899228,
+      "ticket_category_id": 1387710933618659358,
+      "staff_role_ids": [
+        1378080877292032090
+      ],
+      "verification_emoji": "\u2705",
+      "staff_mention_role_id": 1378080877292032090,
+      "transcript_channel_id": 1387711290616840283,
+      "welcome_channel_id": 1387711121846173767,
+      "admin_id": 462635310724022285,
+      "admin_email": "unlobo77777@gmail.com"
+    },
+    "1273646186603217007": {
+      "verification_role_id": 1273662965727625269,
+      "ticket_category_id": 1387713223305723924,
+      "staff_role_ids": [
+        1273663180534714369,
+        1273663240974499961
+      ],
+      "verification_emoji": "\u2705",
+      "staff_mention_role_id": 1273663180534714369,
+      "transcript_channel_id": 1387713285280759829,
+      "welcome_channel_id": 1273658923563352124,
+      "admin_id": 462635310724022285,
+      "admin_email": "unlobo77777@gmail.com"
+    }
+  },
+  "guilds": {
+    "1020374565190389760": {
+      "welcome_channel_id": 1020374565710467163
+    }
+  }
+}

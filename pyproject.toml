@@ -1,0 +1,9 @@
+[project]
+name = "discord-bot-neon-vice"
+version = "1.0.0"
+description = "Discord bot for Neon Vice RP with verification, tickets, and welcome systems"
+requires-python = ">=3.11"
+dependencies = [
+    "discord.py>=2.5.2",
+    "aiohttp>=3.8.0",
+]
