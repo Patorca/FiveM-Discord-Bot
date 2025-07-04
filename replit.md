@@ -142,6 +142,14 @@ This is a Discord bot built with Python using the discord.py library. The bot pr
 - June 28, 2025. Successfully migrated from Replit Agent to standard Replit environment with security improvements and dependency management
 - June 28, 2025. Enhanced welcome message system with original creative content, roleplay-themed messaging, and added /previsualizar_bienvenida command for administrators
 - June 28, 2025. Added FiveM server status monitoring system with automatic updates every 5 minutes, real-time status tracking from status.cfx.re, and commands for configuration
+- June 29, 2025. Successfully completed migration from Replit Agent to standard Replit environment with enhanced security practices, proper dependency management via pyproject.toml, and secure environment variable handling for Discord bot token
+- June 29, 2025. Enhanced ticket system with staff role management and transcript channel configuration - added /set-staff-role, /remove-staff-role, /set-transcript-channel, /remove-transcript-channel, and /ticket-info commands for complete administrative control
+- June 29, 2025. Enhanced ticket system with automatic staff role mentions when tickets are created and improved DM transcript delivery with fallback notifications when DMs are disabled
+- June 29, 2025. Changed bot activity status from "Watching" to "Playing" Moderando PT Scripts
+- June 30, 2025. Enhanced FiveM status monitoring system with persistent message configuration - monitor now automatically resumes after bot restarts and continues editing the same status message instead of creating new ones
+- June 30, 2025. Added comprehensive moderation system with /limpiar, /banear, /timeout, and /quitar-timeout commands featuring safety validations, role hierarchy checks, DM notifications, and detailed logging
+- June 30, 2025. Enhanced moderation system with customizable role permissions - added /set-moderator-role, /remove-moderator-role, and /moderation-info commands allowing administrators to define which roles can use moderation commands beyond default Discord permissions
+- June 30, 2025. Fixed FiveM status monitoring persistence issue - system now properly loads configuration on startup and maintains monitoring across bot restarts
 
 ## User Preferences
 

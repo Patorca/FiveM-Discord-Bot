@@ -65,6 +65,20 @@
       "welcome_channel_id": 1273658923563352124,
       "admin_id": 462635310724022285,
       "admin_email": "unlobo77777@gmail.com"
+    },
+    "1013070886972174417": {
+      "staff_role_ids": [
+        1031170366640488559
+      ],
+      "welcome_channel_id": 1013070887433551994,
+      "verification_role_id": 1013072415628202035,
+      "transcript_channel_id": 1388814880441630833,
+      "ticket_category_id": 1388814809683857510,
+      "fivem_status_channel_id": 1065361775228362842,
+      "fivem_status_message_id": 1389256506385367121,
+      "moderation_role_ids": [
+        1031170366640488559
+      ]
     }
   },
   "guilds": {

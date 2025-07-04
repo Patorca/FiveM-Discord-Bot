@@ -63,6 +63,7 @@ class DiscordBot(commands.Bot):
         await self.load_extension('cogs.welcome')
         await self.load_extension('cogs.utility')
         await self.load_extension('cogs.fivem_status')
+        await self.load_extension('cogs.moderation')
         
         # Sync slash commands
         try:
@@ -77,8 +78,8 @@ class DiscordBot(commands.Bot):
         
         # Set bot status
         activity = discord.Activity(
-            type=discord.ActivityType.watching,
-            name="Moderando Neon Vice RP"
+            type=discord.ActivityType.playing,
+            name="Moderando PT Scripts"
         )
         await self.change_presence(activity=activity)
     
