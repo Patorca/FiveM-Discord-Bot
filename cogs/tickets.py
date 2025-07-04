@@ -114,12 +114,19 @@ class TicketView(discord.ui.View):
             )
             embed.set_footer(text=f"Ticket creado por {user.display_name}", icon_url=user.display_avatar.url)
 
-            # Mencionar rol staff definido en config
-            staff_mention_role_id = server_config.get('staff_mention_role_id')
-            if staff_mention_role_id:
-                staff_role = guild.get_role(staff_mention_role_id)
+            # Mencionar todos los roles de staff configurados
+            staff_role_ids = server_config.get('staff_role_ids', [])
+            staff_mentions = []
+            
+            for role_id in staff_role_ids:
+                staff_role = guild.get_role(role_id)
                 if staff_role:
-                    await ticket_channel.send(f"{staff_role.mention} - Nuevo ticket creado por {user.mention}")
+                    staff_mentions.append(staff_role.mention)
+            
+            # Enviar mensaje inicial con menciones de staff (si hay roles configurados)
+            if staff_mentions:
+                mentions_text = " ".join(staff_mentions)
+                await ticket_channel.send(f"{mentions_text} - Nuevo ticket creado por {user.mention}")
 
             await ticket_channel.send(embed=embed, view=close_view)
             await interaction.followup.send(
@@ -225,6 +232,7 @@ class CloseTicketView(discord.ui.View):
                         )
                         await transcript_channel.send(embed=transcript_embed, file=file)
 
+                # Siempre intentar enviar DM al creador del ticket
                 try:
                     transcript_file_dm = io.StringIO(transcript_content)
                     file_dm = discord.File(transcript_file_dm, filename=f"transcript-{channel.name}.txt")
@@ -232,13 +240,33 @@ class CloseTicketView(discord.ui.View):
                         title="📝 Transcript de tu Ticket",
                         description=(
                             f"Tu ticket en **{channel.guild.name}** ha sido cerrado.\n"
-                            "Aquí tienes el transcript completo de la conversación."
+                            "Aquí tienes el transcript completo de la conversación.\n\n"
+                            f"**Cerrado por:** {user.display_name}\n"
+                            f"**Fecha de cierre:** {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}"
                         ),
                         color=0x3498db
                     )
+                    dm_embed.set_footer(text=f"Servidor: {channel.guild.name}")
                     await ticket_creator.send(embed=dm_embed, file=file_dm)
+                    logger.info(f"Transcript DM enviado exitosamente a {ticket_creator} ({ticket_creator.id})")
                 except discord.Forbidden:
-                    logger.info(f"No se pudo enviar transcript DM a {ticket_creator} - DMs deshabilitados")
+                    logger.warning(f"No se pudo enviar transcript DM a {ticket_creator} - DMs deshabilitados")
+                    # Intentar notificar en el servidor si no se puede enviar DM
+                    try:
+                        notification_embed = discord.Embed(
+                            title="⚠️ No se pudo enviar transcript por DM",
+                            description=(
+                                f"{ticket_creator.mention}, tu ticket ha sido cerrado pero no pudimos enviarte el transcript por DM.\n"
+                                "Por favor, habilita los mensajes directos para recibir transcripts en el futuro."
+                            ),
+                            color=0xffaa00
+                        )
+                        if transcript_channel_id:
+                            transcript_channel = channel.guild.get_channel(transcript_channel_id)
+                            if transcript_channel:
+                                await transcript_channel.send(embed=notification_embed)
+                    except Exception as notif_error:
+                        logger.error(f"Error enviando notificación de DM fallido: {notif_error}")
                 except Exception as e:
                     logger.error(f"Error enviando transcript DM: {e}")
 
@@ -345,6 +373,248 @@ class Tickets(commands.Cog):
             logger.error(f"Error guardando categoría: {e}")
             await interaction.response.send_message(
                 "❌ Ocurrió un error al establecer la categoría del ticket!",
+                ephemeral=True
+            )
+
+    @app_commands.command(name="set-staff-role", description="Establecer rol de staff para gestionar tickets")
+    @app_commands.describe(role="Rol que podrá cerrar y gestionar tickets")
+    @app_commands.default_permissions(manage_roles=True)
+    async def set_staff_role(
+        self,
+        interaction: discord.Interaction,
+        role: discord.Role
+    ):
+        try:
+            config = await load_config()
+            guild_id_str = str(interaction.guild.id)
+            if 'servers' not in config:
+                config['servers'] = {}
+            if guild_id_str not in config['servers']:
+                config['servers'][guild_id_str] = {}
+            if 'staff_role_ids' not in config['servers'][guild_id_str]:
+                config['servers'][guild_id_str]['staff_role_ids'] = []
+
+            # Agregar el rol si no está ya en la lista
+            if role.id not in config['servers'][guild_id_str]['staff_role_ids']:
+                config['servers'][guild_id_str]['staff_role_ids'].append(role.id)
+                
+                with open('config.json', 'w') as f:
+                    json.dump(config, f, indent=2)
+                
+                await interaction.response.send_message(
+                    f"✅ Rol de staff agregado: {role.mention}\n"
+                    f"Los miembros con este rol ahora pueden cerrar y gestionar tickets.",
+                    ephemeral=True
+                )
+                logger.info(f"Rol de staff {role.name} agregado por {interaction.user}")
+            else:
+                await interaction.response.send_message(
+                    f"⚠️ El rol {role.mention} ya está configurado como rol de staff.",
+                    ephemeral=True
+                )
+
+        except Exception as e:
+            logger.error(f"Error guardando rol de staff: {e}")
+            await interaction.response.send_message(
+                "❌ Ocurrió un error al establecer el rol de staff!",
+                ephemeral=True
+            )
+
+    @app_commands.command(name="remove-staff-role", description="Remover rol de staff de la gestión de tickets")
+    @app_commands.describe(role="Rol a remover de los roles de staff")
+    @app_commands.default_permissions(manage_roles=True)
+    async def remove_staff_role(
+        self,
+        interaction: discord.Interaction,
+        role: discord.Role
+    ):
+        try:
+            config = await load_config()
+            guild_id_str = str(interaction.guild.id)
+            
+            if ('servers' not in config or 
+                guild_id_str not in config['servers'] or 
+                'staff_role_ids' not in config['servers'][guild_id_str]):
+                await interaction.response.send_message(
+                    "❌ No hay roles de staff configurados en este servidor.",
+                    ephemeral=True
+                )
+                return
+
+            if role.id in config['servers'][guild_id_str]['staff_role_ids']:
+                config['servers'][guild_id_str]['staff_role_ids'].remove(role.id)
+                
+                with open('config.json', 'w') as f:
+                    json.dump(config, f, indent=2)
+                
+                await interaction.response.send_message(
+                    f"✅ Rol de staff removido: {role.mention}",
+                    ephemeral=True
+                )
+                logger.info(f"Rol de staff {role.name} removido por {interaction.user}")
+            else:
+                await interaction.response.send_message(
+                    f"⚠️ El rol {role.mention} no está configurado como rol de staff.",
+                    ephemeral=True
+                )
+
+        except Exception as e:
+            logger.error(f"Error removiendo rol de staff: {e}")
+            await interaction.response.send_message(
+                "❌ Ocurrió un error al remover el rol de staff!",
+                ephemeral=True
+            )
+
+    @app_commands.command(name="set-transcript-channel", description="Establecer canal para enviar transcripts de tickets")
+    @app_commands.describe(channel="Canal donde se enviarán los transcripts")
+    @app_commands.default_permissions(manage_channels=True)
+    async def set_transcript_channel(
+        self,
+        interaction: discord.Interaction,
+        channel: discord.TextChannel
+    ):
+        try:
+            # Verificar que el bot tiene permisos en el canal
+            bot_perms = channel.permissions_for(interaction.guild.me)
+            if not bot_perms.send_messages or not bot_perms.embed_links or not bot_perms.attach_files:
+                await interaction.response.send_message(
+                    f"❌ No tengo permisos suficientes en {channel.mention}!\n"
+                    "Necesito permisos para: enviar mensajes, embeds y archivos adjuntos.",
+                    ephemeral=True
+                )
+                return
+
+            config = await load_config()
+            guild_id_str = str(interaction.guild.id)
+            if 'servers' not in config:
+                config['servers'] = {}
+            if guild_id_str not in config['servers']:
+                config['servers'][guild_id_str] = {}
+
+            config['servers'][guild_id_str]['transcript_channel_id'] = channel.id
+            with open('config.json', 'w') as f:
+                json.dump(config, f, indent=2)
+            
+            await interaction.response.send_message(
+                f"✅ Canal de transcripts establecido en: {channel.mention}\n"
+                f"Los transcripts de los tickets cerrados se enviarán a este canal.",
+                ephemeral=True
+            )
+            logger.info(f"Canal de transcripts establecido a {channel.name} por {interaction.user}")
+
+        except Exception as e:
+            logger.error(f"Error guardando canal de transcripts: {e}")
+            await interaction.response.send_message(
+                "❌ Ocurrió un error al establecer el canal de transcripts!",
+                ephemeral=True
+            )
+
+    @app_commands.command(name="remove-transcript-channel", description="Desactivar el envío de transcripts a canal específico")
+    @app_commands.default_permissions(manage_channels=True)
+    async def remove_transcript_channel(
+        self,
+        interaction: discord.Interaction
+    ):
+        try:
+            config = await load_config()
+            guild_id_str = str(interaction.guild.id)
+            
+            if ('servers' not in config or 
+                guild_id_str not in config['servers'] or 
+                'transcript_channel_id' not in config['servers'][guild_id_str]):
+                await interaction.response.send_message(
+                    "❌ No hay canal de transcripts configurado en este servidor.",
+                    ephemeral=True
+                )
+                return
+
+            del config['servers'][guild_id_str]['transcript_channel_id']
+            with open('config.json', 'w') as f:
+                json.dump(config, f, indent=2)
+            
+            await interaction.response.send_message(
+                "✅ Canal de transcripts desactivado.\n"
+                "Los transcripts solo se enviarán por DM al usuario.",
+                ephemeral=True
+            )
+            logger.info(f"Canal de transcripts desactivado por {interaction.user}")
+
+        except Exception as e:
+            logger.error(f"Error desactivando canal de transcripts: {e}")
+            await interaction.response.send_message(
+                "❌ Ocurrió un error al desactivar el canal de transcripts!",
+                ephemeral=True
+            )
+
+    @app_commands.command(name="ticket-info", description="Mostrar configuración actual del sistema de tickets")
+    @app_commands.default_permissions(manage_channels=True)
+    async def ticket_info(
+        self,
+        interaction: discord.Interaction
+    ):
+        try:
+            config = await load_config()
+            guild_id_str = str(interaction.guild.id)
+            server_config = config.get('servers', {}).get(guild_id_str, {})
+            
+            embed = discord.Embed(
+                title="🎫 Configuración del Sistema de Tickets",
+                color=0x3498db
+            )
+            
+            # Categoría de tickets
+            category_id = server_config.get('ticket_category_id')
+            if category_id:
+                category = interaction.guild.get_channel(category_id)
+                category_text = category.name if category else "⚠️ Categoría no encontrada"
+            else:
+                category_text = "No configurada"
+            embed.add_field(
+                name="📁 Categoría de Tickets",
+                value=category_text,
+                inline=False
+            )
+            
+            # Roles de staff
+            staff_role_ids = server_config.get('staff_role_ids', [])
+            if staff_role_ids:
+                staff_roles = []
+                for role_id in staff_role_ids:
+                    role = interaction.guild.get_role(role_id)
+                    if role:
+                        staff_roles.append(role.mention)
+                    else:
+                        staff_roles.append(f"⚠️ Rol no encontrado (ID: {role_id})")
+                staff_text = "\n".join(staff_roles)
+            else:
+                staff_text = "No configurados"
+            embed.add_field(
+                name="👮 Roles de Staff",
+                value=staff_text,
+                inline=False
+            )
+            
+            # Canal de transcripts
+            transcript_channel_id = server_config.get('transcript_channel_id')
+            if transcript_channel_id:
+                transcript_channel = interaction.guild.get_channel(transcript_channel_id)
+                transcript_text = transcript_channel.mention if transcript_channel else "⚠️ Canal no encontrado"
+            else:
+                transcript_text = "No configurado"
+            embed.add_field(
+                name="📝 Canal de Transcripts",
+                value=transcript_text,
+                inline=False
+            )
+            
+            embed.set_footer(text=f"Servidor: {interaction.guild.name}")
+            
+            await interaction.response.send_message(embed=embed, ephemeral=True)
+
+        except Exception as e:
+            logger.error(f"Error mostrando info de tickets: {e}")
+            await interaction.response.send_message(
+                "❌ Ocurrió un error al mostrar la información de tickets!",
                 ephemeral=True
             )
 
