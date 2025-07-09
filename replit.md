@@ -150,6 +150,10 @@ This is a Discord bot built with Python using the discord.py library. The bot pr
 - June 30, 2025. Added comprehensive moderation system with /limpiar, /banear, /timeout, and /quitar-timeout commands featuring safety validations, role hierarchy checks, DM notifications, and detailed logging
 - June 30, 2025. Enhanced moderation system with customizable role permissions - added /set-moderator-role, /remove-moderator-role, and /moderation-info commands allowing administrators to define which roles can use moderation commands beyond default Discord permissions
 - June 30, 2025. Fixed FiveM status monitoring persistence issue - system now properly loads configuration on startup and maintains monitoring across bot restarts
+- July 04, 2025. Successfully completed migration from Replit Agent to standard Replit environment with enhanced security practices, proper dependency management via pyproject.toml, and secure environment variable handling for Discord bot token
+- July 09, 2025. Changed bot activity status to "Playing Moderando parra PT"
+- July 09, 2025. Enhanced FiveM status monitoring system to support multiple servers - each Discord server can now have its own independent FiveM status monitor with persistent message tracking across bot restarts
+- July 09, 2025. Added Tebex verification system for kingmaps.net purchases - users can verify their transaction IDs to receive configured roles, with commands for setup and management by administrators
 
 ## User Preferences
 

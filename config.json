@@ -79,6 +79,17 @@
       "moderation_role_ids": [
         1031170366640488559
       ]
+    },
+    "1392508267187540081": {
+      "staff_role_ids": [
+        1392513443134701690
+      ],
+      "moderation_role_ids": [
+        1392513443134701690
+      ],
+      "fivem_status_channel_id": 1392514506399154217,
+      "fivem_status_message_id": 1392515742309683281,
+      "welcome_channel_id": 1392516102772494478
     }
   },
   "guilds": {

@@ -64,6 +64,7 @@ class DiscordBot(commands.Bot):
         await self.load_extension('cogs.utility')
         await self.load_extension('cogs.fivem_status')
         await self.load_extension('cogs.moderation')
+        await self.load_extension('cogs.tebex_verification')
         
         # Sync slash commands
         try:
@@ -79,7 +80,7 @@ class DiscordBot(commands.Bot):
         # Set bot status
         activity = discord.Activity(
             type=discord.ActivityType.playing,
-            name="Moderando PT Scripts"
+            name="Moderando parra PT"
         )
         await self.change_presence(activity=activity)
     
