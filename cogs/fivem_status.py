@@ -36,8 +36,7 @@ class FiveMStatus(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         self.status_url = "https://status.cfx.re"
-        self.status_message_id = None
-        self.status_channel_id = None
+        self.server_monitors = {}  # guild_id -> {channel_id, message_id}
         self.last_status = {}
         self.config_loaded = False
         
@@ -45,31 +44,32 @@ class FiveMStatus(commands.Cog):
         """Load monitor configuration from config file"""
         try:
             config = await load_config()
-            guild_id_str = str(self.bot.guilds[0].id) if self.bot.guilds else None
-            if guild_id_str and 'servers' in config and guild_id_str in config['servers']:
-                server_config = config['servers'][guild_id_str]
-                
-                self.status_channel_id = server_config.get('fivem_status_channel_id')
-                self.status_message_id = server_config.get('fivem_status_message_id')
-                
-                if self.status_channel_id and self.status_message_id:
-                    logger.info(f"Loaded FiveM monitor config: channel={self.status_channel_id}, message={self.status_message_id}")
+            if 'servers' in config:
+                for guild_id_str, server_config in config['servers'].items():
+                    guild_id = int(guild_id_str)
+                    channel_id = server_config.get('fivem_status_channel_id')
+                    message_id = server_config.get('fivem_status_message_id')
                     
-                    # Verificar que el mensaje todavía existe
-                    try:
-                        channel = self.bot.get_channel(self.status_channel_id)
-                        if channel:
-                            await channel.fetch_message(self.status_message_id)
-                            logger.info("FiveM status message found and validated")
-                        else:
-                            logger.warning("FiveM status channel not found, clearing config")
-                            self.status_channel_id = None
-                            self.status_message_id = None
-                    except discord.NotFound:
-                        logger.warning("FiveM status message not found, clearing message ID")
-                        self.status_message_id = None
-                    except Exception as e:
-                        logger.error(f"Error validating FiveM status message: {e}")
+                    if channel_id and message_id:
+                        # Verificar que el canal y mensaje existen
+                        try:
+                            channel = self.bot.get_channel(channel_id)
+                            if channel:
+                                await channel.fetch_message(message_id)
+                                self.server_monitors[guild_id] = {
+                                    'channel_id': channel_id,
+                                    'message_id': message_id
+                                }
+                                logger.info(f"Loaded FiveM monitor for guild {guild_id}: channel={channel_id}, message={message_id}")
+                            else:
+                                logger.warning(f"FiveM status channel not found for guild {guild_id}, skipping")
+                        except discord.NotFound:
+                            logger.warning(f"FiveM status message not found for guild {guild_id}, clearing message ID")
+                            # Limpiar mensaje ID inválido
+                            config['servers'][guild_id_str]['fivem_status_message_id'] = None
+                            await save_config(config)
+                        except Exception as e:
+                            logger.error(f"Error validating FiveM status message for guild {guild_id}: {e}")
                         
         except Exception as e:
             logger.error(f"Error loading FiveM monitor config: {e}")
@@ -229,34 +229,32 @@ class FiveMStatus(commands.Cog):
         """Load configuration on first monitor run"""
         try:
             config = await load_config()
-            guild_id_str = str(self.bot.guilds[0].id) if self.bot.guilds else None
-            if guild_id_str and 'servers' in config and guild_id_str in config['servers']:
-                server_config = config['servers'][guild_id_str]
-                
-                self.status_channel_id = server_config.get('fivem_status_channel_id')
-                self.status_message_id = server_config.get('fivem_status_message_id')
-                
-                if self.status_channel_id and self.status_message_id:
-                    logger.info(f"Loaded FiveM monitor config on startup: channel={self.status_channel_id}, message={self.status_message_id}")
+            if 'servers' in config:
+                for guild_id_str, server_config in config['servers'].items():
+                    guild_id = int(guild_id_str)
+                    channel_id = server_config.get('fivem_status_channel_id')
+                    message_id = server_config.get('fivem_status_message_id')
                     
-                    # Verificar que el mensaje todavía existe
-                    try:
-                        channel = self.bot.get_channel(self.status_channel_id)
-                        if channel:
-                            await channel.fetch_message(self.status_message_id)
-                            logger.info("FiveM status message validated on startup")
-                        else:
-                            logger.warning("FiveM status channel not found on startup, clearing config")
-                            self.status_channel_id = None
-                            self.status_message_id = None
-                    except discord.NotFound:
-                        logger.warning("FiveM status message not found on startup, clearing message ID")
-                        self.status_message_id = None
-                        # Actualizar configuración para eliminar el mensaje ID inválido
-                        config['servers'][guild_id_str]['fivem_status_message_id'] = None
-                        await save_config(config)
-                    except Exception as e:
-                        logger.error(f"Error validating FiveM status message on startup: {e}")
+                    if channel_id and message_id:
+                        # Verificar que el canal y mensaje existen
+                        try:
+                            channel = self.bot.get_channel(channel_id)
+                            if channel:
+                                await channel.fetch_message(message_id)
+                                self.server_monitors[guild_id] = {
+                                    'channel_id': channel_id,
+                                    'message_id': message_id
+                                }
+                                logger.info(f"Loaded FiveM monitor for guild {guild_id}: channel={channel_id}, message={message_id}")
+                            else:
+                                logger.warning(f"FiveM status channel not found for guild {guild_id}, skipping")
+                        except discord.NotFound:
+                            logger.warning(f"FiveM status message not found for guild {guild_id}, clearing message ID")
+                            # Limpiar mensaje ID inválido
+                            config['servers'][guild_id_str]['fivem_status_message_id'] = None
+                            await save_config(config)
+                        except Exception as e:
+                            logger.error(f"Error validating FiveM status message for guild {guild_id}: {e}")
                         
             self.config_loaded = True
                         
@@ -266,13 +264,13 @@ class FiveMStatus(commands.Cog):
     
     @tasks.loop(minutes=5)
     async def status_monitor(self):
-        """Monitor FiveM status every 5 minutes and update the message"""
+        """Monitor FiveM status every 5 minutes and update all server messages"""
         try:
             # Check if we need to load configuration
-            if not self.config_loaded or (not self.status_channel_id or not self.status_message_id):
+            if not self.config_loaded or not self.server_monitors:
                 await self.load_config_and_start()
-                if not self.status_channel_id or not self.status_message_id:
-                    logger.debug("Status monitor: No channel or message configured after loading config")
+                if not self.server_monitors:
+                    logger.debug("Status monitor: No monitors configured after loading config")
                     return
             
             logger.info("Status monitor: Checking FiveM status...")
@@ -283,27 +281,37 @@ class FiveMStatus(commands.Cog):
             
             # Always update the message (not just when status changes) to show it's active
             self.last_status = status_data
+            embed = self.create_status_embed(status_data)
             
-            # Get the channel and message
-            channel = self.bot.get_channel(self.status_channel_id)
-            if not channel:
-                logger.error(f"Status monitor: Channel {self.status_channel_id} not found")
-                return
-            
-            try:
-                message = await channel.fetch_message(self.status_message_id)
-                embed = self.create_status_embed(status_data)
-                await message.edit(embed=embed)
-                logger.info("Status monitor: FiveM status message updated successfully")
-            except discord.NotFound:
-                # Message was deleted, create a new one
-                logger.warning("Status monitor: Original message not found, creating new one")
-                embed = self.create_status_embed(status_data)
-                new_message = await channel.send(embed=embed)
-                self.status_message_id = new_message.id
-                logger.info("Status monitor: Created new FiveM status message")
-            except Exception as e:
-                logger.error(f"Status monitor: Error updating message: {e}")
+            # Update messages for all configured servers
+            for guild_id, monitor_config in self.server_monitors.items():
+                channel_id = monitor_config['channel_id']
+                message_id = monitor_config['message_id']
+                
+                # Get the channel and message
+                channel = self.bot.get_channel(channel_id)
+                if not channel:
+                    logger.error(f"Status monitor: Channel {channel_id} not found for guild {guild_id}")
+                    continue
+                
+                try:
+                    message = await channel.fetch_message(message_id)
+                    await message.edit(embed=embed)
+                    logger.info(f"Status monitor: FiveM status message updated successfully for guild {guild_id}")
+                except discord.NotFound:
+                    # Message was deleted, remove from config and memory
+                    logger.warning(f"Status monitor: Message not found for guild {guild_id}, removing from config")
+                    del self.server_monitors[guild_id]
+                    # Update config file
+                    try:
+                        config = await load_config()
+                        if 'servers' in config and str(guild_id) in config['servers']:
+                            config['servers'][str(guild_id)]['fivem_status_message_id'] = None
+                            await save_config(config)
+                    except Exception as config_error:
+                        logger.error(f"Error updating config after message deletion: {config_error}")
+                except Exception as e:
+                    logger.error(f"Status monitor: Error updating message for guild {guild_id}: {e}")
             
         except Exception as e:
             logger.error(f"Status monitor: Unexpected error: {e}")
@@ -374,9 +382,12 @@ class FiveMStatus(commands.Cog):
             embed = self.create_status_embed(status_data)
             message = await canal.send(embed=embed)
             
-            # Store the message and channel info
-            self.status_message_id = message.id
-            self.status_channel_id = canal.id
+            # Store the message and channel info for this guild
+            guild_id = interaction.guild.id
+            self.server_monitors[guild_id] = {
+                'channel_id': canal.id,
+                'message_id': message.id
+            }
             self.last_status = status_data
             
             # Save to config file for persistence
@@ -430,19 +441,18 @@ class FiveMStatus(commands.Cog):
                 await interaction.response.send_message(embed=embed, ephemeral=True)
                 return
             
-            if not self.status_channel_id or not self.status_message_id:
+            guild_id = interaction.guild.id
+            if guild_id not in self.server_monitors:
                 embed = discord.Embed(
                     title="ℹ️ Sin configuración",
-                    description="El monitoreo de FiveM no está actualmente configurado.",
+                    description="El monitoreo de FiveM no está actualmente configurado para este servidor.",
                     color=0x3498db
                 )
                 await interaction.response.send_message(embed=embed, ephemeral=True)
                 return
             
-            # Clear the configuration
-            self.status_message_id = None
-            self.status_channel_id = None
-            self.last_status = {}
+            # Clear the configuration for this guild
+            del self.server_monitors[guild_id]
             
             # Remove from config file
             try:
@@ -493,10 +503,11 @@ class FiveMStatus(commands.Cog):
                 await interaction.response.send_message(embed=embed, ephemeral=True)
                 return
             
-            if not self.status_channel_id or not self.status_message_id:
+            guild_id = interaction.guild.id
+            if guild_id not in self.server_monitors:
                 embed = discord.Embed(
                     title="ℹ️ Sin configuración",
-                    description="El monitoreo de FiveM no está configurado. Usa `/configurar_estado_fivem` primero.",
+                    description="El monitoreo de FiveM no está configurado para este servidor. Usa `/configurar_estado_fivem` primero.",
                     color=0x3498db
                 )
                 await interaction.response.send_message(embed=embed, ephemeral=True)
@@ -528,13 +539,16 @@ class FiveMStatus(commands.Cog):
     async def monitor_info_fivem(self, interaction: discord.Interaction):
         """Show information about FiveM monitoring"""
         try:
+            guild_id = interaction.guild.id
             embed = discord.Embed(
                 title="📊 Información del Monitor FiveM",
                 color=0x3498db
             )
             
-            if self.status_channel_id and self.status_message_id:
-                channel = self.bot.get_channel(self.status_channel_id)
+            if guild_id in self.server_monitors:
+                monitor_config = self.server_monitors[guild_id]
+                channel = self.bot.get_channel(monitor_config['channel_id'])
+                
                 embed.add_field(
                     name="Estado del Monitor",
                     value="🟢 Activo",
@@ -542,7 +556,7 @@ class FiveMStatus(commands.Cog):
                 )
                 embed.add_field(
                     name="Canal Configurado",
-                    value=channel.mention if channel else f"❌ Canal no encontrado (ID: {self.status_channel_id})",
+                    value=channel.mention if channel else f"❌ Canal no encontrado (ID: {monitor_config['channel_id']})",
                     inline=True
                 )
                 embed.add_field(
@@ -552,7 +566,7 @@ class FiveMStatus(commands.Cog):
                 )
                 embed.add_field(
                     name="ID del Mensaje",
-                    value=f"`{self.status_message_id}`",
+                    value=f"`{monitor_config['message_id']}`",
                     inline=True
                 )
                 embed.add_field(
@@ -565,13 +579,20 @@ class FiveMStatus(commands.Cog):
                     value=f"<t:{int(self.status_monitor.next_iteration.timestamp())}:R>" if self.status_monitor.next_iteration else "Desconocido",
                     inline=True
                 )
+                
+                # Add global monitor information
+                embed.add_field(
+                    name="Servidores Monitoreados",
+                    value=f"{len(self.server_monitors)} servidor(es)",
+                    inline=True
+                )
             else:
                 embed.add_field(
                     name="Estado del Monitor",
                     value="🔴 No configurado",
                     inline=False
                 )
-                embed.description = "El monitoreo automático de FiveM no está configurado.\nUsa `/configurar_estado_fivem` para configurarlo."
+                embed.description = "El monitoreo automático de FiveM no está configurado para este servidor.\nUsa `/configurar_estado_fivem` para configurarlo."
             
             embed.set_footer(text="Usa /forzar_actualizacion_fivem para una actualización manual")
             await interaction.response.send_message(embed=embed)
