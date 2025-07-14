@@ -29,45 +29,71 @@ class Welcome(commands.Cog):
                 logger.error(f"Welcome channel {welcome_channel_id} not found in {member.guild.name}")
                 return
             
-            # Create enhanced welcome embed with original content
+            # Create professional welcome message for KingMaps ES
             embed = discord.Embed(
-                title="🌟 ¡Un nuevo miembro ha llegado a la ciudad! 🌟",
-                description=f"## ¡Bienvenido {member.mention}! 👋\n\n"
-                           f"🎭 Has llegado a **{member.guild.name}**, donde cada historia comienza con una decisión...\n\n"
-                           f"### 🚀 **Primeros pasos para comenzar tu aventura:**\n"
-                           f"🔐 **Verificación:** Ve al canal de verificación y reacciona con ✅ para obtener acceso completo\n"
-                           f"📋 **Normas:** Lee nuestras reglas para mantener la armonía en la ciudad\n"
-                           f"🎤 **Presentación:** Cuéntanos quién eres y qué te trae por aquí\n"
-                           f"🎮 **Roleplay:** ¡Sumérgete en la experiencia más inmersiva!\n\n"
-                           f"### 💡 **¿Necesitas ayuda?**\n"
-                           f"🎫 Crea un ticket de soporte y nuestro staff te asistirá\n"
-                           f"👥 Pregunta a otros miembros de la comunidad\n\n"
-                           f"✨ *¡Esperamos que vivas experiencias inolvidables aquí!* ✨",
-                color=0x7289da
+                title="👑 ¡Bienvenid@ a **KingMaps ES**! 🗺️",
+                description="🏙️ **Especialistas en mapeados personalizados para servidores de FiveM.**",
+                color=0xFFD700
             )
             
-            # Set thumbnail to user's avatar with border effect
+            # Main welcome content
+            welcome_text = (
+                f"👋 ¡Hola, {member.mention}! Nos alegra tenerte aquí en **KingMaps ES**, tu tienda de confianza en el mundo de **FiveM Roleplay**.\n"
+                f"Aquí encontrarás **mapeados únicos**, soporte profesional y atención personalizada.\n\n"
+                f"### 🔧 ¿Qué ofrecemos?\n\n"
+                f"✅ Mapeados personalizados y optimizados para FiveM\n"
+                f"🛒 Venta directa de mapas listos para usar\n"
+                f"📐 Desarrollo a medida según tus necesidades\n"
+                f"🧰 Soporte técnico y asistencia postventa"
+            )
+            
+            embed.add_field(
+                name="━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
+                value=welcome_text,
+                inline=False
+            )
+            
+            # Important channels
+            channels_text = (
+                "📜 **Normas del servidor** → <#1392509354497802372>\n"
+                "📢 **Anuncios y novedades** → <#1392509948205731960>\n"
+                "🛍️ **Catálogo de mapas y tienda** → <#1392511332426715367>\n"
+                "🤝 **Soporte y dudas** → <#1392513638174163035>\n"
+                "✅ **Verificación obligatoria** → <#1392866786700951573>\n"
+                "💬 **Habla con la comunidad** → <#1392508267187540084>"
+            )
+            
+            embed.add_field(
+                name="📌 Canales importantes:",
+                value=channels_text,
+                inline=False
+            )
+            
+            # Important reminders
+            reminder_text = (
+                "📌 **Recuerda verificarte en <#1392866786700951573> para acceder a todos los canales.**\n"
+                "📩 Si necesitas ayuda, no dudes en abrir un ticket o escribirnos por soporte.\n\n"
+                "👑 ¡Gracias por confiar en **KingMaps ES**!\n"
+                "Tu servidor se merece un mapeado a la altura. 🏗️"
+            )
+            
+            embed.add_field(
+                name="━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━",
+                value=reminder_text,
+                inline=False
+            )
+            
+            # Set thumbnail to user's avatar
             embed.set_thumbnail(url=member.display_avatar.url)
             
-            # Add welcome banner or server image
-            if member.guild.icon:
-                embed.set_image(url=member.guild.icon.url)
-            
-            # Enhanced footer with member count and join date
+            # Enhanced footer with member count
             embed.set_footer(
-                text=f"👥 Miembro #{len(member.guild.members)} • Únete a la aventura en {member.guild.name}",
+                text=f"👥 Miembro #{len(member.guild.members)} • KingMaps ES - Especialistas en FiveM",
                 icon_url=member.guild.icon.url if member.guild.icon else None
             )
             
             # Add timestamp
             embed.timestamp = discord.utils.utcnow()
-            
-            # Add fields for better organization
-            embed.add_field(
-                name="🎯 Tu nueva aventura comienza ahora",
-                value="Explora los canales, conoce gente nueva y vive experiencias únicas",
-                inline=False
-            )
             
             await welcome_channel.send(embed=embed)
             logger.info(f"Welcome message sent for {member} in {member.guild.name}")
