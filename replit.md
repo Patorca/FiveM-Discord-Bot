@@ -154,6 +154,9 @@ This is a Discord bot built with Python using the discord.py library. The bot pr
 - July 09, 2025. Changed bot activity status to "Playing Moderando parra PT"
 - July 09, 2025. Enhanced FiveM status monitoring system to support multiple servers - each Discord server can now have its own independent FiveM status monitor with persistent message tracking across bot restarts
 - July 09, 2025. Added Tebex verification system for kingmaps.net purchases - users can verify their transaction IDs to receive configured roles, with commands for setup and management by administrators
+- July 09, 2025. Successfully completed migration from Replit Agent to standard Replit environment with enhanced security practices, proper dependency management via pyproject.toml, and secure environment variable handling for Discord bot token
+- July 10, 2025. Added server utility commands - /servidor-info displays comprehensive server statistics including member counts, channels, roles, boost status, and creation date, while /servidor-logo shows the server icon with download links in multiple formats (PNG, WEBP, JPG)
+- July 12, 2025. Updated welcome message system with professional KingMaps ES branding - new welcome message specifically designed for the FiveM mapping store, includes service overview, important channels, verification requirements, and professional business presentation
 
 ## User Preferences
 

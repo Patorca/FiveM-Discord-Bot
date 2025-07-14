@@ -89,7 +89,11 @@
       ],
       "fivem_status_channel_id": 1392514506399154217,
       "fivem_status_message_id": 1392515742309683281,
-      "welcome_channel_id": 1392516102772494478
+      "welcome_channel_id": 1392516102772494478,
+      "tebex_verified_role_id": 1392636655495811314,
+      "transcript_channel_id": 1392513730134151248,
+      "ticket_category_id": 1392513668872142950,
+      "verification_role_id": 1392866296122839138
     }
   },
   "guilds": {
