@@ -31,3 +31,6 @@ author = 44202343
 [[workflows.workflow.tasks]]
 task = "workflow.run"
 args = "Discord Bot"
+
+[agent]
+expertMode = true
